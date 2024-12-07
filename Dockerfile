@@ -1,23 +1,11 @@
-FROM golang:1.19-alpine as builder
-
+FROM golang:1.22 as build
 WORKDIR /app
-
-COPY go.mod go.sum ./
-
-RUN go mod tidy
-
 COPY . .
-
-RUN go build -o url-shortener .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server .
 
 FROM alpine:latest
-
-RUN apk --no-cache add ca-certificates
-
-WORKDIR /root/
-
-COPY --from=builder /app/url-shortener .
-
+WORKDIR /app
+COPY --from=build /app/server /server
+RUN chmod +x /server
 EXPOSE 8080
-
-CMD ["./url-shortener"]
+CMD ["/server"]
