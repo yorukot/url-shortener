@@ -18,9 +18,9 @@ Clone the repository:
 ```bash
 git clone https://github.com/your-repo/url-shortener.git
 cd url-shortener
-Install dependencies:
 ```
 
+Install dependencies:
 ```bash
 go mod tidy
 ```
@@ -29,6 +29,7 @@ Create a .env file in the root directory:
 ```bash
 echo "API_TOKEN=your_token_here" >> .env
 echo "MONGODB_URI=mongodb://username:password@localhost:27017/urlshortener" >> .env
+echo "GIN_MODE=release" >> .env
 ```
 
 Run the application:
@@ -45,7 +46,8 @@ All requests must include an Authorization header with the value of the API_TOKE
 Endpoints
 ### Create/Shorten a URL
 Request
-POST /shorten
+`POST /shorten`
+
 Headers:
 
 ```json
@@ -76,14 +78,15 @@ Response:
 ```
 ### Redirect to Long URL
 Request
-GET /:shortURL
+`GET /:shortURL`
 
-Example:
+#### Example:
 
 ```bash
 curl -X GET http://localhost:8080/abc123
 ```
-Behavior:
+
+- Behavior:
 If the URL is valid and not expired, it redirects to the original long_url.
 
 If the URL has expired, responds with:
@@ -95,7 +98,7 @@ If the URL does not exist, responds with:
 { "error": "URL not found" }
 ```
 
-Create a Short URL
+### Use curl create a Short URL exmaple 
 ```bash
 curl -X POST http://localhost:8080/shorten \
 -H "Authorization: your_api_token" \
@@ -105,7 +108,7 @@ curl -X POST http://localhost:8080/shorten \
   "exp": 10
 }'
 ```
-Response:
+#### Response:
 
 ```json
 {
@@ -114,14 +117,14 @@ Response:
   "exp": 1709999999
 }
 ```
-Redirect Using Short URL
+#### Redirect Using Short URL
 ```bash
 curl -X GET http://localhost:8080/abc123
 ```
-Redirects to https://example.com if not expired.
-Returns an error if expired or not found.
+- Redirects to https://example.com if not expired.
+- Returns an error if expired or not found.
 
-Notes:
+## Notes:
 
 - Ensure MongoDB is running and accessible at the URI specified in MONGODB_URI.
 - Expired URLs are not deleted automatically; you can create a background job for cleanup if needed.
