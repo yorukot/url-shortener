@@ -45,12 +45,12 @@ func initMongoDB() *mongo.Collection {
 	clientOptions := options.Client().ApplyURI(mongoURI)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 
 	err = client.Ping(context.TODO(), nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to ping MongoDB: %v", err)
 	}
 
 	log.Println("Connected to MongoDB!")
@@ -83,12 +83,14 @@ func main() {
 		var request URL
 
 		token := c.GetHeader("Authorization")
-		if strings.TrimSpace(token) != "Bearer " + validToken {
+		if strings.TrimSpace(token) != "Bearer "+validToken {
+			log.Printf("Unauthorized request: Invalid or missing token")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or missing token"})
 			return
 		}
 
 		if err := c.ShouldBindJSON(&request); err != nil {
+			log.Printf("Invalid request body: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 			return
 		}
@@ -119,6 +121,7 @@ func main() {
 		opts := options.Update().SetUpsert(true) // Upsert: update if exists, insert if not
 		_, err := urlCollection.UpdateOne(context.TODO(), filter, update, opts)
 		if err != nil {
+			log.Printf("Failed to save URL to MongoDB: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save URL"})
 			return
 		}
@@ -139,12 +142,14 @@ func main() {
 		var result URL
 		err := urlCollection.FindOne(context.TODO(), bson.M{"short_url": shortURL}).Decode(&result)
 		if err != nil {
+			log.Printf("URL not found for short URL '%s': %v", shortURL, err)
 			c.JSON(http.StatusNotFound, gin.H{"error": "URL not found"})
 			return
 		}
 
 		// Check if the URL has expired
 		if result.Exp != nil && time.Now().Unix() > *result.Exp {
+			log.Printf("URL for short URL '%s' has expired", shortURL)
 			c.JSON(http.StatusGone, gin.H{"error": "URL has expired"})
 			return
 		}
@@ -154,5 +159,7 @@ func main() {
 	})
 
 	// Start the server on port 8080
-	r.Run(":8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
